@@ -87,7 +87,6 @@ enum class Type(
     val label: String,
     val color: Color
 ) {
-    NA(base = 0,"", Color.Transparent),
     COMMON(base = 1,"Common", color_common),
     RARE(base = 3,"Rare", color_rare),
     EPIC(base = 6,"Epic", color_epic),

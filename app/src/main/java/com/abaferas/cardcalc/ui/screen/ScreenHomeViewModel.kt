@@ -16,7 +16,7 @@ class ScreenHomeViewModel @Inject constructor(
 
     private val args: HomeScreenArgs = HomeScreenArgs(savedStateHandle = savedStateHandle)
     private val dataLoader = DataLoader()
-    private val data: Map<Int,DataLoader.Item> = dataLoader.getData(Type.COMMON)
+    private val data: Map<Int, DataLoader.Item> = dataLoader.getData(Type.COMMON)
 
     init {
         getData()
@@ -33,13 +33,17 @@ class ScreenHomeViewModel @Inject constructor(
 
     override fun onSelectType(index: Int, type: Type) {
         val result = amountValidation(state.value.userAmount, type)
-        val levels = levelValidation(state.value.currentLevel,type)
-        if (result.second && state.value.userAmount.isNotBlank() && levels.second) {
+        val levels = levelValidation(state.value.currentLevel, type)
+        if (result.second && "${state.value.userAmount}".isNotBlank() && levels.second) {
             iState.update {
                 it.copy(
                     currentSelected = index,
                     currentType = type,
-                    amountError = ErrorUiState()
+                    amountError = ErrorUiState(),
+                    nextLevel = 0,
+                    needCards = 0,
+                    needGold = 0,
+                    xpGain = 0
                 )
             }
         } else {
@@ -60,9 +64,9 @@ class ScreenHomeViewModel @Inject constructor(
         }
     }
 
-    override fun onAmountChange(amount: String) {
+    override fun onAmountChange(amount: Int) {
         val result = amountValidation(amount, state.value.currentType)
-        if (result.second && amount.isNotBlank()) {
+        if (result.second && "$amount".isNotBlank()) {
             iState.update {
                 it.copy(
                     userAmount = amount,
@@ -72,6 +76,7 @@ class ScreenHomeViewModel @Inject constructor(
         } else {
             iState.update {
                 it.copy(
+                    userAmount = amount,
                     amountError = ErrorUiState(
                         true,
                         "max: ${result.first}, type: ${state.value.currentType.label}."
@@ -81,9 +86,9 @@ class ScreenHomeViewModel @Inject constructor(
         }
     }
 
-    override fun onCurrentLevelChange(level: String) {
+    override fun onCurrentLevelChange(level: Int) {
         val result = levelValidation(level, state.value.currentType)
-        if (result.second && level.isNotBlank()) {
+        if (result.second && "$level".isNotBlank()) {
             iState.update {
                 it.copy(
                     currentLevel = level,
@@ -93,6 +98,7 @@ class ScreenHomeViewModel @Inject constructor(
         } else {
             iState.update {
                 it.copy(
+                    currentLevel = level,
                     currentLevelError = ErrorUiState(
                         isError = true,
                         message = "range: ${result.first}, type: ${state.value.currentType.label}."
@@ -102,16 +108,12 @@ class ScreenHomeViewModel @Inject constructor(
         }
     }
 
-    private fun amountValidation(amount: String, currentType: Type): Pair<String, Boolean> {
-        if (amount.isBlank()) {
+    private fun amountValidation(amount: Int, currentType: Type): Pair<String, Boolean> {
+        if ("$amount".isBlank()) {
             return Pair("Enter amount", false)
         }
-        val total = amount.toInt()
+        val total = amount
         return when (currentType) {
-            Type.NA -> {
-                Pair("", false)
-            }
-
             Type.COMMON -> {
                 Pair("12,087", total <= 12087)
             }
@@ -133,16 +135,13 @@ class ScreenHomeViewModel @Inject constructor(
             }
         }
     }
-    private fun levelValidation(level: String, currentType: Type): Pair<String, Boolean> {
-        if (level.isBlank()) {
+
+    private fun levelValidation(level: Int, currentType: Type): Pair<String, Boolean> {
+        if ("$level".isBlank()) {
             return Pair("Enter amount", false)
         }
-        val total = level.toInt()
+        val total = level
         return when (currentType) {
-            Type.NA -> {
-                Pair("", false)
-            }
-
             Type.COMMON -> {
                 Pair("Lvl: 1 : 14", total in 1..14)
             }
@@ -168,7 +167,7 @@ class ScreenHomeViewModel @Inject constructor(
     override fun onClearAmount() {
         iState.update {
             it.copy(
-                userAmount = ""
+                userAmount = 0
             )
         }
     }
@@ -176,66 +175,52 @@ class ScreenHomeViewModel @Inject constructor(
     override fun onClearLevel() {
         iState.update {
             it.copy(
-                currentLevel = ""
+                currentLevel = 0
             )
         }
     }
 
     override fun onCalculateClick() {
-        val isLevelValid = levelValidation(state.value.currentLevel, state.value.currentType).second
-        val isAmountValid = amountValidation(state.value.userAmount, state.value.currentType).second
-        if (isAmountValid && isLevelValid){
-            val nextLevel = calculateNextLevel(state.value.currentLevel.toInt(),state.value.userAmount.toInt(),dataLoader.getData(state.value.currentType))
-            val neededCards = calculateNeededCards(state.value.currentLevel.toInt(),state.value.userAmount.toInt(),dataLoader.getData(state.value.currentType))
-            iState.update {
-                it.copy(
-                    nextLevel = "$nextLevel",
-                    maxLevel = "14",
-                    maxCards = "${dataLoader.getData(state.value.currentType)[nextLevel]!!.cards}",
-                    needCards = "$neededCards"
-                )
-            }
-        }else {
-            iState.update {
-                it.copy(
-                    amountError = ErrorUiState(
-                        true,
-                        "max: ${state.value.userAmount}, type: ${state.value.currentType.label}."
-                    ),
-                    currentLevelError = ErrorUiState(
-                        isError = true,
-                        message = "range: ${state.value.currentLevel}, type: ${state.value.currentType.label}."
+        val values = state.value
+        var cLevel = values.currentLevel
+        var cAmount = values.userAmount
+        var nGold = values.needGold
+        var nCards = values.needCards
+        var gXp = values.xpGain
+        if (
+            levelValidation(cLevel, values.currentType).second &&
+            amountValidation(cAmount, values.currentType).second
+        ) {
+            val cData = dataLoader.getData(values.currentType)
+            if (cAmount < (cData[cLevel + 1]?.cards ?: 0)){
+                nCards = (cData[cLevel + 1]?.cards ?: 0) - cAmount
+                gXp = (cData[cLevel + 1]?.xp ?: 0)
+                nGold = (cData[cLevel + 1]?.gold ?: 0)
+                iState.update {
+                    it.copy(
+                        needCards = nCards,
+                        xpGain = gXp,
+                        needGold = nGold,
+                        nextLevel = cLevel + 1,
                     )
-                )
+                }
+            }else{
+                while (cAmount > (cData[cLevel + 1]?.cards ?: 0)){
+                    cAmount -= (cData[cLevel + 1]?.cards ?: 0)
+                    nCards = cAmount
+                    nGold += (cData[cLevel + 1]?.gold ?: 0)
+                    gXp += (cData[cLevel + 1]?.xp ?: 0)
+                    cLevel++
+                }
+                iState.update {
+                    it.copy(
+                        needCards = nCards,
+                        xpGain = gXp,
+                        needGold = nGold,
+                        nextLevel = cLevel + 1,
+                    )
+                }
             }
-        }
-    }
-
-    private fun calculateNextLevel(level: Int,amount: Int,dataSet: Map<Int,DataLoader.Item>): Int {
-        return if (amount < dataSet[level]!!.cards) amount
-        else {
-            var next = level
-            var total = amount
-            while (total > dataSet[next]!!.cards){
-                total -= dataSet[next]!!.cards
-                next++
-            }
-            next
-        }
-    }
-
-    private fun calculateNeededCards(level: Int,amount: Int,dataSet: Map<Int, DataLoader.Item>): Int{
-        var currentAmount = amount
-        var currentLevel = level
-        var neededAmount = 0
-        val nextLvl = calculateNextLevel(level, amount, dataSet)
-        if (amount < dataSet[level]!!.cards) return dataSet[level]?.cards!! - amount
-        else {
-            while (currentAmount >= dataSet[currentLevel]?.cards!!){
-                currentAmount -= dataSet[currentLevel]?.cards!!
-                currentLevel++
-            }
-            return currentAmount
         }
     }
 }
@@ -244,7 +229,6 @@ class DataLoader {
 
     fun getData(type: Type): Map<Int, Item> {
         return when (type) {
-            Type.NA -> emptyMap()
             Type.COMMON -> data.common
             Type.RARE -> data.rare
             Type.EPIC -> data.epic
@@ -319,7 +303,7 @@ class DataLoader {
             14 to Item(20, 100000, 2000),
         ),
         champ = mapOf(
-            11 to Item(1, 0, 800),
+            11 to Item(1, 0, 0),
             12 to Item(2, 35000, 1600),
             13 to Item(8, 75000, 2000),
             14 to Item(20, 100000, 4400),

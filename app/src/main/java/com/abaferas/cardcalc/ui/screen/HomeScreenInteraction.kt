@@ -5,8 +5,8 @@ import com.abaferas.cardcalc.Type
 interface HomeScreenInteraction {
 
     fun onSelectType(index: Int, type: Type)
-    fun onAmountChange(amount: String)
-    fun onCurrentLevelChange(level: String)
+    fun onAmountChange(amount: Int)
+    fun onCurrentLevelChange(level: Int)
     fun onClearAmount()
     fun onClearLevel()
 

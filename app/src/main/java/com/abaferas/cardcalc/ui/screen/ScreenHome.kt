@@ -122,24 +122,24 @@ fun ScreenHomeContent(
 
         item {
             DataRow(
-                "Next:" , state.nextLevel,state.maxLevel,state.currentType.color
+                "Next:" , "${state.nextLevel}",state.currentType.color
             )
         }
         item {
             DataRow(
-                "Cards" , state.needCards,state.maxCards,state.currentType.color
-            )
-        }
-
-        item {
-            DataRow(
-                "Gold" , state.needGold,state.maxGold,state.currentType.color
+                "Cards" , "${state.needCards}",state.currentType.color
             )
         }
 
         item {
             DataRow(
-                "Xp Gain:" , state.xpGain,state.maxXp,state.currentType.color
+                "Gold" , "${state.needGold}",state.currentType.color
+            )
+        }
+
+        item {
+            DataRow(
+                "Xp Gain:" , "${state.xpGain}",state.currentType.color
             )
         }
 
@@ -169,7 +169,10 @@ fun ScreenHomeContent(
                 },
                 singleLine = true, maxLines = 1,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                value = state.currentLevel, onValueChange = interaction::onCurrentLevelChange,
+                value = if (state.currentLevel == 0) "" else "${state.currentLevel}", onValueChange ={
+                    val con = if (it.isBlank()) 0 else it.toInt()
+                    interaction.onCurrentLevelChange(con)
+                },
                 placeholder = { Text(text = "Current Level", color = state.currentType.color) },
                 leadingIcon = {
                     Icon(
@@ -179,7 +182,7 @@ fun ScreenHomeContent(
                     )
                 },
                 trailingIcon = {
-                    AnimatedVisibility(visible = state.currentLevel.isNotBlank()) {
+                    AnimatedVisibility(visible = "${state.currentLevel}".isNotBlank()) {
                         Icon(
                             modifier = Modifier.clickable { interaction.onClearLevel() },
                             painter = painterResource(id = R.drawable.delete),
@@ -215,7 +218,12 @@ fun ScreenHomeContent(
                 },
                 singleLine = true, maxLines = 1,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                value = state.userAmount, onValueChange = interaction::onAmountChange,
+                value = if(state.userAmount == 0) "" else "${state.userAmount}",
+                onValueChange = {
+                    val con = if (it.isBlank()) 0 else it.toInt()
+                    interaction.onAmountChange(con)
+                }
+                ,
                 placeholder = { Text(text = "Amount", color = state.currentType.color) },
                 leadingIcon = {
                     Icon(
@@ -225,7 +233,7 @@ fun ScreenHomeContent(
                     )
                 },
                 trailingIcon = {
-                    AnimatedVisibility(visible = state.userAmount.isNotBlank()) {
+                    AnimatedVisibility(visible = "${state.userAmount}".isNotBlank()) {
                         Icon(
                             modifier = Modifier.clickable { interaction.onClearAmount() },
                             painter = painterResource(id = R.drawable.delete),
@@ -248,7 +256,6 @@ fun ScreenHomeContent(
 fun DataRow(
     label: String,
     result: String,
-    max: String,
     color: Color = Color.Yellow,
     paddingValues: PaddingValues = PaddingValues(top = 8.dp, start = 32.dp,end = 32.dp)
 ) {
@@ -261,6 +268,5 @@ fun DataRow(
     ) {
         Text(textAlign = TextAlign.Start, text = label, fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Bold, color = color)
         Text(textAlign = TextAlign.End,text = result, fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Medium, color = Color.Black)
-        Text(textAlign = TextAlign.End,text = "/$max", fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Bold, color = color)
     }
 }
