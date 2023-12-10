@@ -122,12 +122,6 @@ fun ScreenHomeContent(
 
         item {
             DataRow(
-                "Current:" , state.currentLevel,state.maxLevel,state.currentType.color,
-                paddingValues = PaddingValues(top = 24.dp, start = 32.dp,end = 32.dp)
-            )
-        }
-        item {
-            DataRow(
                 "Next:" , state.nextLevel,state.maxLevel,state.currentType.color
             )
         }
@@ -149,6 +143,52 @@ fun ScreenHomeContent(
             )
         }
 
+
+        item {
+            TextField(
+                modifier = Modifier.padding(top = 16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = state.currentType.color,
+                    cursorColor = state.currentType.color,
+                    unfocusedIndicatorColor = state.currentType.color,
+                    focusedTextColor = state.currentType.color,
+                    unfocusedTextColor = state.currentType.color,
+                    focusedLeadingIconColor = state.currentType.color,
+                    unfocusedLeadingIconColor = state.currentType.color,
+                    focusedTrailingIconColor = state.currentType.color,
+                    unfocusedTrailingIconColor = state.currentType.color,
+                    focusedSupportingTextColor = Color.Red,
+                    unfocusedSupportingTextColor = Color.Red
+                ),
+                supportingText = {
+                    AnimatedVisibility(visible = state.currentLevelError.isError) {
+                        Text(text = state.currentLevelError.message, fontWeight = FontWeight.Medium)
+                    }
+                },
+                singleLine = true, maxLines = 1,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                value = state.currentLevel, onValueChange = interaction::onCurrentLevelChange,
+                placeholder = { Text(text = "Current Level", color = state.currentType.color) },
+                leadingIcon = {
+                    Icon(
+                        tint = state.currentType.color,
+                        painter = painterResource(id = R.drawable.layers),
+                        contentDescription = ""
+                    )
+                },
+                trailingIcon = {
+                    AnimatedVisibility(visible = state.currentLevel.isNotBlank()) {
+                        Icon(
+                            modifier = Modifier.clickable { interaction.onClearLevel() },
+                            painter = painterResource(id = R.drawable.delete),
+                            contentDescription = ""
+                        )
+                    }
+                }
+            )
+        }
 
         item {
             TextField(
@@ -197,7 +237,7 @@ fun ScreenHomeContent(
         }
 
         item{
-            Button(onClick = { /*TODO*/ }) {
+            Button(onClick = { interaction.onCalculateClick() }) {
                 Text(text = "Calculate")
             }
         }
@@ -219,9 +259,7 @@ fun DataRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        val label2 = (label + "           ".substring(0,10))
-        val label3 = (max + "             ".substring(0,10))
-        Text(textAlign = TextAlign.Start, text = label2, fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Bold, color = color)
+        Text(textAlign = TextAlign.Start, text = label, fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Bold, color = color)
         Text(textAlign = TextAlign.End,text = result, fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Medium, color = Color.Black)
         Text(textAlign = TextAlign.End,text = "/$max", fontSize = 20.sp, fontFamily = Athiti, fontWeight = FontWeight.Bold, color = color)
     }
